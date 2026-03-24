@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Productos Ultra PRO - ChrisTech</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
+body { background:#f3f4f6; color:#1f2937; padding:20px; }
+
+/* HEADER */
+header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:#ffffff;
+    padding:15px 25px;
+    border-radius:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+header img { height:50px; border-radius:8px; }
+
+.search-container {
+    display:flex;
+    align-items:center;
+    background:#e5e7eb;
+    padding:8px 12px;
+    border-radius:10px;
+    width:300px;
+}
+.search-container input {
+    flex:1;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:#1f2937;
+    padding:8px;
+    font-size:14px;
+}
+.search-container svg { width:20px; height:20px; stroke:#3b82f6; margin-left:8px; }
+
+/* FORMULARIO AGREGAR PRODUCTO */
+form#formAgregar {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:20px;
+    background:#ffffff;
+    padding:15px;
+    border-radius:12px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.05);
+}
+form input, form select { padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; }
+form button { padding:8px 12px; border:none; border-radius:8px; cursor:pointer; background:#3b82f6; color:white; font-weight:600; transition:0.3s; }
+form button:hover { background:#60a5fa; }
+
+/* TABLA */
+table { width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,0.05); }
+th, td { padding:12px 15px; text-align:left; transition:background 0.3s; vertical-align:middle; }
+th { background:#3b82f6; color:#ffffff; }
+tr { border-bottom:1px solid #e5e7eb; }
+tr:last-child { border-bottom:none; }
+
+/* iPhone resaltado */
+.iphone-row { background:#dbeafe; transition: background 0.3s; }
+.iphone-row:hover { background:#bfdbfe; }
+
+/* STOCK */
+.stock-disponible { color:#10b981; font-weight:600; }
+.stock-agotado { color:#ef4444; font-weight:600; }
+
+/* BOTONES */
+button { padding:6px 12px; border:none; border-radius:8px; cursor:pointer; font-weight:600; transition:0.3s, transform 0.2s; }
+button:hover { transform:scale(1.05); }
+button.edit { background:#facc15; color:#1f2937; }
+button.edit:hover { background:#fde68a; }
+button.delete { background:#ef4444; color:#ffffff; }
+button.delete:hover { background:#fca5a5; }
+button.agotado { background:#9ca3af; color:#1f2937; }
+button.agotado:hover { background:#d1d5db; }
+
+/* ICONO iPhone */
+.iphone-icon { width:20px; height:20px; margin-right:6px; vertical-align:middle; }
+
+/* IMAGEN PRODUCTO */
+.product-img { width:40px; height:40px; border-radius:6px; object-fit:cover; margin-right:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<header>
+    <img src="christech.jpeg" alt="ChrisTech Logo">
+    <div>
+        <div class="search-container">
+            <input type="text" id="buscador" placeholder="Buscar producto...">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </div>
+    </div>
+</header>
+
+<!-- FORMULARIO AGREGAR PRODUCTO -->
+<form id="formAgregar">
+    <input type="text" id="nombre" placeholder="Nombre del producto" required>
+    <input type="text" id="precio" placeholder="Precio" required>
+    <input type="text" id="imagen" placeholder="URL de la imagen">
+    <select id="stock">
+        <option value="true">Disponible</option>
+        <option value="false">Agotado</option>
+    </select>
+    <button type="submit">Agregar Producto</button>
+</form>
+
+<table id="tablaProductos">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+let productos = JSON.parse(localStorage.getItem('productos')) || [
+    {id:1, nombre:"iPhone 14 Pro", precio:"$999", stock:true, img:"https://cdn-icons-png.flaticon.com/512/888/888879.png"},
+    {id:2, nombre:"iPhone 14", precio:"$799", stock:true, img:"https://cdn-icons-png.flaticon.com/512/888/888879.png"},
+    {id:3, nombre:"iPhone 13", precio:"$699", stock:true, img:"https://cdn-icons-png.flaticon.com/512/888/888879.png"},
+    {id:4, nombre:"MacBook Pro", precio:"$1299", stock:true, img:""},
+    {id:5, nombre:"AirPods Pro", precio:"$249", stock:true, img:""}
+];
+
+const tablaBody = document.querySelector("#tablaProductos tbody");
+const buscador = document.getElementById('buscador');
+
+function guardarProductos(){ localStorage.setItem('productos', JSON.stringify(productos)); }
+
+function mostrarProductos(lista){
+    tablaBody.innerHTML = '';
+    lista.forEach(p=>{
+        const tr = document.createElement('tr');
+
+        if(p.nombre.toLowerCase().includes("iphone")) tr.classList.add('iphone-row');
+
+        const imgHTML = p.img ? `<img src="${p.img}" class="product-img" alt="${p.nombre}">` : '';
+        const nombreHTML = p.nombre.toLowerCase().includes("iphone") ?
+            `<img src="https://cdn-icons-png.flaticon.com/512/888/888879.png" class="iphone-icon" alt="iPhone Icon">${p.nombre}` :
+            p.nombre;
+
+        tr.innerHTML = `
+            <td>${imgHTML}${nombreHTML}</td>
+            <td>${p.precio}</td>
+            <td class="${p.stock ? 'stock-disponible' : 'stock-agotado'}">${p.stock ? 'Disponible' : 'Agotado'}</td>
+            <td>
+                <button class="edit" onclick="editarProducto(${p.id})">Editar</button>
+                <button class="agotado" onclick="toggleAgotado(${p.id})">${p.stock ? 'Agotado' : 'Disponible'}</button>
+                <button class="delete" onclick="eliminarProducto(${p.id})">Eliminar</button>
+            </td>
+        `;
+        tablaBody.appendChild(tr);
+    });
+}
+
+// Botones
+function eliminarProducto(id){
+    const tr = Array.from(tablaBody.children).find(r=>r.querySelector('button.delete').onclick.toString().includes(id));
+    tr.style.transition = "opacity 0.4s, transform 0.4s";
+    tr.style.opacity = 0;
+    tr.style.transform = "translateX(100%)";
+    setTimeout(()=>{
+        productos = productos.filter(p=>p.id!==id);
+        guardarProductos();
+        mostrarProductos(productos);
+    }, 400);
+}
+
+function toggleAgotado(id){
+    const producto = productos.find(p=>p.id===id);
+    producto.stock = !producto.stock;
+    guardarProductos();
+    mostrarProductos(productos);
+}
+
+function editarProducto(id){
+    const producto = productos.find(p=>p.id===id);
+    const nuevoNombre = prompt("Editar nombre:", producto.nombre);
+    const nuevoPrecio = prompt("Editar precio:", producto.precio);
+    const nuevaImagen = prompt("URL de imagen:", producto.img);
+    if(nuevoNombre) producto.nombre = nuevoNombre;
+    if(nuevoPrecio) producto.precio = nuevoPrecio;
+    if(nuevaImagen!==null) producto.img = nuevaImagen;
+    guardarProductos();
+    mostrarProductos(productos);
+}
+
+// Buscador inteligente
+buscador.addEventListener('input', ()=>{
+    const query = buscador.value.toLowerCase();
+    const filtrados = productos.filter(p=>p.nombre.toLowerCase().includes(query));
+    mostrarProductos(filtrados);
+});
+
+// FORMULARIO AGREGAR PRODUCTO
+document.getElementById('formAgregar').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const nombre = document.getElementById('nombre').value;
+    const precio = document.getElementById('precio').value;
+    const img = document.getElementById('imagen').value;
+    const stock = document.getElementById('stock').value === "true";
+
+    const nuevoProducto = {
+        id: Date.now(),
+        nombre,
+        precio,
+        stock,
+        img
+    };
+
+    productos.push(nuevoProducto);
+    guardarProductos();
+    mostrarProductos(productos);
+
+    // Limpiar formulario
+    document.getElementById('formAgregar').reset();
+});
+
+// Mostrar todos al inicio
+mostrarProductos(productos);
+</script>
+
+</body>
+</html>
